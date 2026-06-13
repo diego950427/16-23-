@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>日本韓國自由行互動行程表</title>
+  <style>
+    :root {
+      --bg: #f6f7f4;
+      --panel: #ffffff;
+      --ink: #202423;
+      --muted: #69706d;
+      --line: #dfe4dd;
+      --accent: #1f7a6d;
+      --accent-2: #d95f43;
+      --accent-3: #2f5f9f;
+      --soft: #e9f3ef;
+      --warn: #fff1d8;
+      --shadow: 0 16px 40px rgba(34, 45, 40, .10);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    button, input, textarea, select { font: inherit; }
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .primary:hover { color: white; filter: brightness(.96); }
+    .danger:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    .app {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr) 350px;
+      min-height: 100vh;
+    }
+    aside, .detail {
+      background: var(--panel);
+      border-color: var(--line);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+    aside { border-right: 1px solid var(--line); }
+    .detail { border-left: 1px solid var(--line); }
+    .brand {
+      padding: 22px 18px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      font-size: 22px;
+      line-height: 1.25;
+      margin: 0 0 8px;
+      letter-spacing: 0;
+    }
+    .brand p, .muted {
+      color: var(--muted);
+      margin: 0;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .tools {
+      padding: 14px 18px;
+      display: grid;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .tools input, .field input, .field textarea, .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .field textarea { min-height: 78px; resize: vertical; }
+    .day-list {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .day-tab {
+      width: 100%;
+      text-align: left;
+      padding: 11px 12px;
+      display: grid;
+      gap: 2px;
+      border-radius: var(--radius);
+    }
+    .day-tab.active {
+      background: var(--soft);
+      border-color: var(--accent);
+      color: var(--ink);
+    }
+    .day-tab b { font-size: 15px; }
+    .day-tab span { font-size: 13px; color: var(--muted); }
+    main {
+      min-width: 0;
+      padding: 22px 24px 36px;
+    }
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .title-block h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .stat strong { display: block; font-size: 24px; }
+    .stat span { color: var(--muted); font-size: 13px; }
+    .section {
+      margin-top: 20px;
+    }
+    .section h3 {
+      font-size: 18px;
+      margin: 0 0 10px;
+    }
+    .route {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .route-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      line-height: 1.6;
+    }
+    .route-chip {
+      background: #eef3fa;
+      color: #244f85;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 13px;
+    }
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 12px;
+    }
+    .item {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 20px rgba(34,45,40,.05);
+      padding: 13px;
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+    }
+    .time {
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .item h4 {
+      margin: 0 0 5px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+    .item p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+    .badge {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #fbfcfa;
+    }
+    .badge.todo { background: var(--warn); color: #8a5a16; border-color: #f2d39b; }
+    .badge.food { background: #fff0ee; color: #9a4934; border-color: #f0c2b5; }
+    .badge.shop { background: #eef3ff; color: #31598e; border-color: #cbd8f2; }
+    .badge.hotel { background: #eef8f2; color: #27734b; border-color: #c7e5d3; }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-size: 16px;
+    }
+    .detail-head, .editor {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .detail-head h3 { margin: 0 0 7px; font-size: 20px; }
+    .form {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .notes {
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .note {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fbfcfa;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      color: var(--muted);
+      background: rgba(255,255,255,.6);
+    }
+    .hidden { display: none !important; }
+    .file-input { display: none; }
+
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 230px minmax(0, 1fr); }
+      .detail {
+        grid-column: 1 / -1;
+        position: static;
+        height: auto;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+    @media (max-width: 760px) {
+      .app { display: block; }
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+      }
+      .day-list {
+        grid-auto-flow: column;
+        overflow-x: auto;
+      }
+      .day-tab { min-width: 180px; }
+      main { padding: 18px 14px; }
+      .topbar { display: grid; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .item { grid-template-columns: 1fr; }
+      .item .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>日本韓國自由行行程表</h1>
+        <p>115/6/16 - 6/23，8 天 7 夜。資料已從 Word 檔預先整理，可持續新增與調整。</p>
+      </div>
+      <div class="tools">
+        <input id="search" type="search" placeholder="搜尋景點、餐廳、備註">
+        <div class="actions">
+          <button id="addDay">＋日</button>
+          <button id="exportJson">匯出</button>
+          <button id="importJson">匯入</button>
+          <button id="resetData" class="danger">重置</button>
+          <input id="importFile" class="file-input" type="file" accept="application/json">
+        </div>
+      </div>
+      <nav id="dayList" class="day-list"></nav>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div class="title-block">
+          <h2 id="dayTitle"></h2>
+          <p id="daySubtitle" class="muted"></p>
+        </div>
+        <button id="addItemTop" class="primary">＋新增行程</button>
+      </div>
+
+      <div class="summary-grid">
+        <div class="stat"><strong id="statItems">0</strong><span>行程項目</span></div>
+        <div class="stat"><strong id="statTodos">0</strong><span>待辦/待定</span></div>
+        <div class="stat"><strong id="statFood">0</strong><span>美食</span></div>
+        <div class="stat"><strong id="statRoute">0</strong><span>路線點</span></div>
+      </div>
+
+      <section class="section">
+        <h3>路線順序</h3>
+        <div id="routeBox" class="route"></div>
+      </section>
+
+      <section class="section">
+        <h3>時間軸</h3>
+        <div id="timeline" class="timeline"></div>
+      </section>
+    </main>
+
+    <section class="detail">
+      <div class="detail-head">
+        <h3>行程編輯</h3>
+        <p class="muted">點選時間軸項目可編輯；新增後會自動存在這台電腦的瀏覽器。</p>
+      </div>
+      <form id="dayForm" class="editor">
+        <div class="field">
+          <label for="dayDate">日期</label>
+          <input id="dayDate" placeholder="例如 6月24日(三)">
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="field">
+            <label for="dayLabel">天數</label>
+            <input id="dayLabel" placeholder="例如 第9日">
+          </div>
+          <div class="field">
+            <label for="dayCity">目的地</label>
+            <input id="dayCity" placeholder="例如 首爾">
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" type="submit">儲存每日資訊</button>
+          <button id="deleteDay" class="danger" type="button">刪除此日</button>
+        </div>
+      </form>
+      <form id="itemForm" class="form">
+        <input id="editingId" type="hidden">
+        <div class="row">
+          <div class="field">
+            <label for="itemTime">時間</label>
+            <input id="itemTime" placeholder="例如 09:17">
+          </div>
+          <div class="field">
+            <label for="itemCategory">分類</label>
+            <select id="itemCategory">
+              <option value="交通">交通</option>
+              <option value="景點">景點</option>
+              <option value="美食">美食</option>
+              <option value="購物">購物</option>
+              <option value="住宿">住宿</option>
+              <option value="待辦">待辦</option>
+              <option value="備註">備註</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="itemTitle">標題</label>
+          <input id="itemTitle" required placeholder="例如 門司港懷舊展望台">
+        </div>
+        <div class="field">
+          <label for="itemPlace">地點/路線點</label>
+          <input id="itemPlace" placeholder="填地名可自動產生 Google Maps 連結">
+        </div>
+        <div class="field">
+          <label for="itemDetail">內部細節</label>
+          <textarea id="itemDetail" placeholder="票價、營業時間、候位方式、備案、提醒..."></textarea>
+        </div>
+        <div class="field">
+          <label for="itemStatus">狀態</label>
+          <select id="itemStatus">
+            <option value="確定">確定</option>
+            <option value="待定">待定</option>
+            <option value="想去">想去</option>
+            <option value="已預約">已預約</option>
+            <option value="必做">必做</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="primary" type="submit">儲存</button>
+          <button id="newItem" type="button">清空新增</button>
+          <button id="deleteItem" class="danger hidden" type="button">刪除</button>
+        </div>
+      </form>
+      <div class="notes">
+        <div class="note">小提示：同一天的「地點/路線點」會自動整理成路線順序；每個路線點都能打開 Google Maps 搜尋。</div>
+        <div class="note">匯出 JSON 可以備份，匯入 JSON 可還原或搬到另一台電腦。</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "tripPlanner.wordImport.v1";
+
+    const initialTrip = {
+      title: "115年6月16(二)~6月23日(二) 8天7夜 日本韓國自由行行程表",
+      intro: [
+        "飛機：韓國 JIN 航空",
+        "6月15日預計4點下班後，回家拿行李，先去華泰名品城吃晚餐，再出發去桃園機場。"
+      ],
+      days: [
+        {
+          id: "d1",
+          date: "6月16日(二)",
+          label: "第1日",
+          city: "韓國釜山",
+          items: [
+            item("02:00", "交通", "抵達釜山金海機場", "釜山金海機場", "凌晨 2 點飛機，早上 6:15 左右到達。", "確定"),
+            item("", "待辦", "買地鐵一日券", "沙上站", "抵達後購買地鐵一日券。", "必做"),
+            item("", "待辦", "換鈔", "", "機場或市區換鈔。", "必做"),
+            item("", "住宿", "ND1226 HOTEL 放行李", "沙上站 ND1226 HOTEL", "沙上站 5 號出口；儂特利早餐。隔日預計 7 點退房前往機場。", "確定"),
+            item("", "景點", "新世界 SPA LAND 汗蒸幕", "新世界 SPA LAND", "帶墨鏡；百貨午餐與下午逛街。釜山僅 1 天，以地鐵 2 號線為主。", "確定"),
+            item("晚上", "美食", "烤肉或晚餐待定", "", "晚上行程待定。", "待定")
+          ]
+        },
+        {
+          id: "d2",
+          date: "6月17日(三)",
+          label: "第2日",
+          city: "福岡",
+          items: [
+            item("10:00", "交通", "抵達福岡機場", "福岡機場", "1 樓旅客服務中心兌換 JR PASS；A3 門出來轉搭去地鐵的巴士。", "確定"),
+            item("", "待辦", "機場拿 JR PASS、劃由布院座位", "福岡機場", "抵達後先處理 JR PASS 與由布院座位。", "必做"),
+            item("", "住宿", "Dream INN HAKATA 放行李", "Dream INN HAKATA", "地鐵中洲站 6 號出口；住宿在博多商圈附近。", "確定"),
+            item("07:00", "美食", "DACOMECCA 早餐備案", "DACOMECCA 福岡", "早餐店 07:00；同集團 I am donut。推薦烤香腸套餐麵包。", "想去"),
+            item("11:00", "美食", "石原牛午餐", "石原牛 福岡", "營業約 11:00-15:00；走至祇園、運河城、博多城。", "想去"),
+            item("", "購物", "JR 博多城與 KITTE 博多", "博多車站", "AMU PLAZA、博多阪急、KITTE 博多。阪急百貨可兌換觀光客 95 折券。", "確定"),
+            item("", "景點", "博多舊市街與櫛田神社", "櫛田神社", "承天禪寺、山笠季、撫牛、水井、千年銀杏神木。", "想去"),
+            item("晚上", "景點", "福岡塔夜景", "福岡塔", "夜景備案。", "想去"),
+            item("晚餐", "美食", "博多車站拉麵或沾麵", "博多車站", "博多車站 2 樓拉麵一條街；麵屋兼虎沾麵、Shin Shin 拉麵、牛腸鍋。", "待定")
+          ]
+        },
+        {
+          id: "d3",
+          date: "6月18日(四)",
+          label: "第3日",
+          city: "小倉、門司港、下關",
+          items: [
+            item("", "交通", "JR 小倉到門司港", "小倉站", "JR 小倉 -> 門司港約 50 分鐘。", "確定"),
+            item("", "景點", "門司港站與懷舊街區", "門司港站", "車站正面是拍照點；香蕉人拍照；車站建立於 1914 年，內有懷舊氣氛星巴克。", "確定"),
+            item("10:00", "景點", "藍翼橋開合", "藍翼門司吊橋", "10:00-16:00 每逢整點打開；10:20-16:20 每逢 20 分關上。", "想去"),
+            item("午餐", "美食", "燒咖哩 Princess Phi Phi", "Princess Phi Phi 門司港", "門司區西海岸 1-4-7；門口先登記候位。10:30 排隊較好；11:00-20:00。", "必做"),
+            item("", "景點", "門司港懷舊展望台", "門司港懷舊展望室", "31F 俯瞰整個海，可賞夕陽。推薦付費景點。", "想去"),
+            item("", "交通", "渡輪到下關唐戶", "唐戶市場", "門司港搭船到下關唐戶，船票約 400 日幣，每 20 分鐘一班，約 5 分鐘抵達。", "想去"),
+            item("", "景點", "唐戶市場、赤間神宮、關門海峽", "唐戶市場", "唐戶市場假日較熱鬧，2 樓有迴轉壽司；日清講和紀念館、李鴻章小道、馬關條約。", "想去"),
+            item("", "交通", "海底隧道回門司港", "關門隧道", "走海底隧道約 10 分鐘回門司港；可接和布刈神社。", "想去"),
+            item("晚上", "購物", "小倉城、百貨、Outlet、Mall", "小倉城", "JINS 配眼鏡，買鞋、衣服；晚餐與逛街待定。", "待定")
+          ]
+        },
+        {
+          id: "d4",
+          date: "6月19日(五)",
+          label: "第4日",
+          city: "由布院",
+          items: [
+            item("09:17", "交通", "由布院之森前往湯布院", "博多站", "搭 JR PASS，由布院之森 09:17-11:30。", "確定"),
+            item("11:30", "景點", "湯布院老街、金鱗湖", "由布院站", "出站直行不遠是 B-Speak 蛋糕卷；往金鱗湖方向有咖哩可樂餅。", "確定"),
+            item("", "購物", "由布院街道專賣店", "湯之坪街道", "宮崎駿、貓屋敷、熊本熊、湯布院民藝村等店家。", "想去"),
+            item("17:17", "交通", "JR 回博多", "由布院站", "由布院 17:17 -> JR 博多 19:27。", "確定"),
+            item("晚餐", "美食", "大東園本店或藥院燒肉", "大東園 本店", "博多區上川端町 1-1-1，靠近櫛田神社；備案：藥院燒肉。", "待定")
+          ]
+        },
+        {
+          id: "d5",
+          date: "6月20日(六)",
+          label: "第5日",
+          city: "熊本",
+          items: [
+            item("", "交通", "JR PASS 前往熊本", "博多站", "JR 熊本來回。", "確定"),
+            item("", "景點", "熊本城、櫻花馬場、城彩苑", "熊本城", "熊本城與周邊老街。", "確定"),
+            item("", "購物", "上下通、鶴屋百貨", "熊本上通商店街", "上下通逛街、鶴屋百貨。", "想去"),
+            item("", "購物", "AMU PLAZA、SAKURA MACHI", "SAKURA MACHI Kumamoto", "櫻町熊本與 AMU PLAZA。", "想去"),
+            item("午餐", "美食", "中餐待定", "熊本", "可補餐廳。", "待定"),
+            item("晚餐", "美食", "晚餐待定", "博多", "回博多後晚餐。", "待定")
+          ]
+        },
+        {
+          id: "d6",
+          date: "6月21日(日)",
+          label: "第6日",
+          city: "福岡市區、天神",
+          items: [
+            item("08:00", "美食", "早餐鰻魚飯", "福岡", "早餐鰻魚飯。", "想去"),
+            item("", "景點", "大濠公園或福岡塔、海濱公園", "大濠公園", "海灘可看夕陽；海上歐式教堂。", "待定"),
+            item("", "購物", "天神地下街與百貨", "天神地下街", "連通地下鐵機場線；大丸百貨、新光三越。", "確定"),
+            item("", "購物", "PARCO、MINA、ONE FUKUOKA BLDG", "福岡 PARCO", "PARCO 動漫專賣店多；MINA 有 Uniqlo/GU/LOFT/ABC Mart/Seria；ONE FUKUOKA BLDG 新開幕。", "想去"),
+            item("", "美食", "天神甜點與麵包清單", "天神", "Truffle Bakery、PRESS BUTTER SAND、伊都 king、芋屋金次郎、Pain Stock、DACO。", "想去"),
+            item("", "購物", "Bic Camera 電器與咖啡機", "Bic Camera 天神", "下午天神逛街與晚餐；看電器與咖啡機。", "必做"),
+            item("晚上", "景點", "福岡塔夜景", "福岡塔", "門票約 1000 日幣，看夜景。", "想去"),
+            item("晚餐", "美食", "水炊雞或雞肉蓋飯套餐", "博多區住吉2-46-42", "水炊雞約 2700 日幣；地址：博多區住吉 2-46-42。", "待定")
+          ]
+        },
+        {
+          id: "d7",
+          date: "6月22日(一)",
+          label: "第7日",
+          city: "釜山、海雲台",
+          items: [
+            item("早餐後", "交通", "福岡機場飛釜山", "福岡機場", "早餐後去機場，搭 11 點飛機回韓國釜山。", "確定"),
+            item("", "住宿", "海雲台東橫 INN 放行李", "東橫INN 釜山海雲台", "海雲台飯店放行李；慶生。", "確定"),
+            item("下午", "景點", "海岸列車", "海雲台海岸列車", "下午景點：海岸列車。", "待定"),
+            item("晚上", "景點", "遊艇賞夕陽煙花秀", "海雲台遊艇", "晚上搭遊艇賞夕陽煙花秀。", "想去")
+          ]
+        },
+        {
+          id: "d8",
+          date: "6月23日(二)",
+          label: "第8日",
+          city: "釜山、台北",
+          items: [
+            item("早上", "住宿", "飯店早餐賞海景", "海雲台", "早上待飯店吃早餐賞海景。", "確定"),
+            item("下午", "購物", "西面站逛街或南浦雪濃湯", "西面站", "下午行程待定：西面站逛街或南浦雪濃湯。", "待定"),
+            item("22:00", "交通", "釜山飛台北", "金海國際機場", "晚上 10 點飛機回台北。", "確定"),
+            item("6/24 11:40", "交通", "抵達台灣", "台灣桃園國際機場", "6月24日凌晨 11:40 到台灣。原文如此，請再確認實際時間。", "待定")
+          ]
+        }
+      ]
+    };
+
+    function item(time, category, title, place, detail, status) {
+      return {
+        id: "i" + Math.random().toString(36).slice(2, 10),
+        time, category, title, place, detail, status
+      };
+    }
+
+    let trip = loadTrip();
+    let activeDayId = trip.days[0]?.id;
+    let query = "";
+
+    const els = {
+      dayList: document.querySelector("#dayList"),
+      dayTitle: document.querySelector("#dayTitle"),
+      daySubtitle: document.querySelector("#daySubtitle"),
+      timeline: document.querySelector("#timeline"),
+      routeBox: document.querySelector("#routeBox"),
+      search: document.querySelector("#search"),
+      itemForm: document.querySelector("#itemForm"),
+      dayForm: document.querySelector("#dayForm"),
+      dayDate: document.querySelector("#dayDate"),
+      dayLabel: document.querySelector("#dayLabel"),
+      dayCity: document.querySelector("#dayCity"),
+      deleteDay: document.querySelector("#deleteDay"),
+      editingId: document.querySelector("#editingId"),
+      itemTime: document.querySelector("#itemTime"),
+      itemCategory: document.querySelector("#itemCategory"),
+      itemTitle: document.querySelector("#itemTitle"),
+      itemPlace: document.querySelector("#itemPlace"),
+      itemDetail: document.querySelector("#itemDetail"),
+      itemStatus: document.querySelector("#itemStatus"),
+      deleteItem: document.querySelector("#deleteItem"),
+      statItems: document.querySelector("#statItems"),
+      statTodos: document.querySelector("#statTodos"),
+      statFood: document.querySelector("#statFood"),
+      statRoute: document.querySelector("#statRoute"),
+      importFile: document.querySelector("#importFile")
+    };
+
+    render();
+
+    document.querySelector("#addItemTop").addEventListener("click", clearForm);
+    document.querySelector("#newItem").addEventListener("click", clearForm);
+    document.querySelector("#addDay").addEventListener("click", addDay);
+    document.querySelector("#exportJson").addEventListener("click", exportJson);
+    document.querySelector("#importJson").addEventListener("click", () => els.importFile.click());
+    document.querySelector("#resetData").addEventListener("click", resetData);
+    els.search.addEventListener("input", event => {
+      query = event.target.value.trim().toLowerCase();
+      render();
+    });
+    els.importFile.addEventListener("change", importJson);
+    els.itemForm.addEventListener("submit", saveItem);
+    els.dayForm.addEventListener("submit", saveDay);
+    els.deleteItem.addEventListener("click", deleteItem);
+    els.deleteDay.addEventListener("click", deleteDay);
+
+    function loadTrip() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (error) {
+        console.warn(error);
+      }
+      return structuredClone(initialTrip);
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trip));
+    }
+
+    function activeDay() {
+      return trip.days.find(day => day.id === activeDayId) || trip.days[0];
+    }
+
+    function render() {
+      renderDays();
+      renderMain();
+    }
+
+    function renderDays() {
+      els.dayList.innerHTML = "";
+      trip.days.forEach(day => {
+        const count = filteredItems(day).length;
+        const btn = document.createElement("button");
+        btn.className = "day-tab" + (day.id === activeDayId ? " active" : "");
+        btn.innerHTML = `<b>${escapeHtml(day.date)} ${escapeHtml(day.label)}</b><span>${escapeHtml(day.city)} · ${count} 項</span>`;
+        btn.addEventListener("click", () => {
+          activeDayId = day.id;
+          clearForm();
+          render();
+        });
+        els.dayList.appendChild(btn);
+      });
+    }
+
+    function renderMain() {
+      const day = activeDay();
+      if (!day) return;
+      const items = filteredItems(day);
+      els.dayTitle.textContent = `${day.date} ${day.label}`;
+      els.daySubtitle.textContent = day.city;
+      els.statItems.textContent = items.length;
+      els.statTodos.textContent = items.filter(i => ["待辦", "備註"].includes(i.category) || i.status === "待定").length;
+      els.statFood.textContent = items.filter(i => i.category === "美食").length;
+      els.statRoute.textContent = routeItems(items).length;
+      renderRoute(items);
+      renderTimeline(items);
+      renderDayForm(day);
+    }
+
+    function renderDayForm(day) {
+      els.dayDate.value = day.date || "";
+      els.dayLabel.value = day.label || "";
+      els.dayCity.value = day.city || "";
+      els.deleteDay.disabled = trip.days.length <= 1;
+    }
+
+    function renderRoute(items) {
+      const points = routeItems(items);
+      if (!points.length) {
+        els.routeBox.innerHTML = `<div class="empty">這一天還沒有可形成路線的地點。替行程填入「地點/路線點」後會自動出現在這裡。</div>`;
+        return;
+      }
+      const chips = points.map((point, index) => {
+        const q = encodeURIComponent(point.place);
+        return `<a class="route-chip" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noreferrer">${index + 1}. ${escapeHtml(point.place)}</a>`;
+      }).join("<span>→</span>");
+      const dir = encodeURIComponent(points.map(point => point.place).join(" to "));
+      els.routeBox.innerHTML = `
+        <div class="route-line">${chips}</div>
+        <p class="muted" style="margin:10px 0 0">路線順序依時間軸排列。可逐點開 Google Maps 查詢，或新增交通項目補車班時間。</p>
+      `;
+    }
+
+    function renderTimeline(items) {
+      els.timeline.innerHTML = "";
+      if (!items.length) {
+        els.timeline.innerHTML = `<div class="empty">找不到符合搜尋的行程，或這一天還沒有項目。</div>`;
+        return;
+      }
+      items.forEach(entry => {
+        const div = document.createElement("article");
+        div.className = "item";
+        div.innerHTML = `
+          <div class="time">${escapeHtml(entry.time || "未定")}</div>
+          <div>
+            <h4>${escapeHtml(entry.title)}</h4>
+            <p>${escapeHtml(entry.detail || "")}</p>
+            <div class="badges">
+              <span class="badge ${badgeClass(entry.category)}">${escapeHtml(entry.category)}</span>
+              <span class="badge">${escapeHtml(entry.status)}</span>
+              ${entry.place ? `<span class="badge">${escapeHtml(entry.place)}</span>` : ""}
+            </div>
+          </div>
+          <div class="actions">
+            ${entry.place ? `<button class="icon-btn" title="開啟地圖" data-map="${escapeHtml(entry.place)}">⌖</button>` : ""}
+            <button class="icon-btn" title="編輯" data-edit="${entry.id}">✎</button>
+          </div>
+        `;
+        div.querySelector("[data-edit]")?.addEventListener("click", () => editItem(entry.id));
+        div.querySelector("[data-map]")?.addEventListener("click", event => {
+          const place = event.currentTarget.dataset.map;
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`, "_blank", "noreferrer");
+        });
+        els.timeline.appendChild(div);
+      });
+    }
+
+    function filteredItems(day) {
+      const items = [...day.items].sort((a, b) => timeRank(a.time) - timeRank(b.time));
+      if (!query) return items;
+      return items.filter(entry => {
+        const text = `${entry.time} ${entry.category} ${entry.title} ${entry.place} ${entry.detail} ${entry.status}`.toLowerCase();
+        return text.includes(query);
+      });
+    }
+
+    function routeItems(items) {
+      const seen = new Set();
+      return items.filter(entry => {
+        const place = (entry.place || "").trim();
+        if (!place || seen.has(place)) return false;
+        seen.add(place);
+        return true;
+      });
+    }
+
+    function timeRank(value) {
+      if (!value) return 9999;
+      const match = String(value).match(/(\d{1,2})[:：](\d{2})/);
+      if (match) return Number(match[1]) * 60 + Number(match[2]);
+      if (String(value).includes("早")) return 500;
+      if (String(value).includes("午餐") || String(value).includes("中餐")) return 720;
+      if (String(value).includes("下午")) return 850;
+      if (String(value).includes("晚")) return 1100;
+      return 9990;
+    }
+
+    function editItem(id) {
+      const entry = activeDay().items.find(item => item.id === id);
+      if (!entry) return;
+      els.editingId.value = entry.id;
+      els.itemTime.value = entry.time || "";
+      els.itemCategory.value = entry.category || "景點";
+      els.itemTitle.value = entry.title || "";
+      els.itemPlace.value = entry.place || "";
+      els.itemDetail.value = entry.detail || "";
+      els.itemStatus.value = entry.status || "確定";
+      els.deleteItem.classList.remove("hidden");
+      els.itemTitle.focus();
+    }
+
+    function clearForm() {
+      els.editingId.value = "";
+      els.itemTime.value = "";
+      els.itemCategory.value = "景點";
+      els.itemTitle.value = "";
+      els.itemPlace.value = "";
+      els.itemDetail.value = "";
+      els.itemStatus.value = "確定";
+      els.deleteItem.classList.add("hidden");
+      els.itemTitle.focus();
+    }
+
+    function saveItem(event) {
+      event.preventDefault();
+      const day = activeDay();
+      const payload = {
+        id: els.editingId.value || "i" + Date.now().toString(36),
+        time: els.itemTime.value.trim(),
+        category: els.itemCategory.value,
+        title: els.itemTitle.value.trim(),
+        place: els.itemPlace.value.trim(),
+        detail: els.itemDetail.value.trim(),
+        status: els.itemStatus.value
+      };
+      const index = day.items.findIndex(entry => entry.id === payload.id);
+      if (index >= 0) day.items[index] = payload;
+      else day.items.push(payload);
+      persist();
+      clearForm();
+      render();
+    }
+
+    function deleteItem() {
+      const id = els.editingId.value;
+      if (!id) return;
+      const day = activeDay();
+      day.items = day.items.filter(entry => entry.id !== id);
+      persist();
+      clearForm();
+      render();
+    }
+
+    function addDay() {
+      const n = trip.days.length + 1;
+      const day = {
+        id: "d" + Date.now().toString(36),
+        date: `新增日期`,
+        label: `第${n}日`,
+        city: "未設定",
+        items: []
+      };
+      trip.days.push(day);
+      activeDayId = day.id;
+      persist();
+      render();
+    }
+
+    function saveDay(event) {
+      event.preventDefault();
+      const day = activeDay();
+      day.date = els.dayDate.value.trim() || "未設定日期";
+      day.label = els.dayLabel.value.trim() || "未設定天數";
+      day.city = els.dayCity.value.trim() || "未設定目的地";
+      persist();
+      render();
+    }
+
+    function deleteDay() {
+      if (trip.days.length <= 1) return;
+      const day = activeDay();
+      if (!confirm(`確定刪除「${day.date} ${day.label}」？`)) return;
+      trip.days = trip.days.filter(entry => entry.id !== day.id);
+      activeDayId = trip.days[0]?.id;
+      persist();
+      clearForm();
+      render();
+    }
+
+    function exportJson() {
+      const blob = new Blob([JSON.stringify(trip, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "日本韓國自由行互動行程表.json";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function importJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (!Array.isArray(imported.days)) throw new Error("格式不正確");
+          trip = imported;
+          activeDayId = trip.days[0]?.id;
+          persist();
+          clearForm();
+          render();
+        } catch (error) {
+          alert("匯入失敗：JSON 格式不符合行程表。");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    function resetData() {
+      if (!confirm("確定要重置成 Word 檔初始版本？目前瀏覽器中的修改會被清除。")) return;
+      trip = structuredClone(initialTrip);
+      activeDayId = trip.days[0]?.id;
+      persist();
+      clearForm();
+      render();
+    }
+
+    function badgeClass(category) {
+      return {
+        "待辦": "todo",
+        "美食": "food",
+        "購物": "shop",
+        "住宿": "hotel"
+      }[category] || "";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
