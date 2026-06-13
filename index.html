@@ -387,6 +387,94 @@
     }
     .hidden { display: none !important; }
     .file-input { display: none; }
+    #printContainer { display: none; }
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .app {
+        display: none !important;
+      }
+      #printContainer {
+        display: block !important;
+        background: white !important;
+        color: black !important;
+        padding: 0 !important;
+      }
+      .print-header h1 {
+        font-size: 26px;
+        margin: 0 0 10px;
+        color: #1f7a6d;
+      }
+      .print-day {
+        page-break-after: always;
+        margin-bottom: 30px;
+      }
+      .print-day:last-child {
+        page-break-after: avoid;
+      }
+      .print-day h2 {
+        font-size: 20px;
+        border-bottom: 2px solid #1f7a6d;
+        padding-bottom: 6px;
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: #1f7a6d;
+      }
+      .print-route {
+        border: 1px solid #dfe4dd;
+        background: #fbfcfa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      .print-timeline {
+        display: grid;
+        gap: 10px;
+      }
+      .print-item {
+        border: 1px solid #dfe4dd;
+        border-radius: 6px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 12px;
+        align-items: start;
+        page-break-inside: avoid;
+      }
+      .print-time {
+        font-weight: bold;
+        color: #1f7a6d;
+        font-size: 14px;
+      }
+      .print-item-title {
+        font-weight: bold;
+        font-size: 15px;
+        margin-bottom: 4px;
+      }
+      .print-item-detail {
+        color: #555;
+        font-size: 13px;
+        white-space: pre-wrap;
+        margin-bottom: 6px;
+      }
+      .print-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .print-badge {
+        font-size: 11px;
+        color: #666;
+        border: 1px solid #dfe4dd;
+        border-radius: 999px;
+        padding: 1px 6px;
+        background: #fff;
+      }
+    }
+
 
     @media (max-width: 1100px) {
       .app { grid-template-columns: 230px minmax(0, 1fr); }
@@ -432,7 +520,8 @@
         <input id="search" type="search" placeholder="搜尋景點、餐廳、備註">
         <div class="actions">
           <button id="addDay">＋日</button>
-          <button id="exportJson">匯出</button>
+          <button id="exportJson">匯出 JSON</button>
+          <button id="exportPdf" class="primary">匯出 PDF</button>
           <button id="importJson">匯入</button>
           <button id="resetData" class="danger">重置</button>
           <input id="importFile" class="file-input" type="file" accept="application/json">
@@ -721,6 +810,7 @@
     document.querySelector("#newItem").addEventListener("click", clearForm);
     document.querySelector("#addDay").addEventListener("click", addDay);
     document.querySelector("#exportJson").addEventListener("click", exportJson);
+    document.querySelector("#exportPdf").addEventListener("click", exportPdf);
     document.querySelector("#importJson").addEventListener("click", () => els.importFile.click());
     document.querySelector("#resetData").addEventListener("click", resetData);
     els.search.addEventListener("input", event => {
@@ -1045,6 +1135,70 @@
       link.click();
       URL.revokeObjectURL(link.href);
     }
+
+    function exportPdf() {
+      const container = document.querySelector("#printContainer") || document.createElement("div");
+      container.id = "printContainer";
+      container.innerHTML = "";
+
+      const header = document.createElement("div");
+      header.className = "print-header";
+      header.innerHTML = `
+        <h1>${escapeHtml(trip.title)}</h1>
+        <p class="muted" style="margin-top: 5px;">${trip.intro.map(line => escapeHtml(line)).join(" / ")}</p>
+        <hr style="border: 0; border-top: 1px solid var(--line); margin: 20px 0;">
+      `;
+      container.appendChild(header);
+
+      trip.days.forEach(day => {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "print-day";
+
+        const items = [...day.items].sort((a, b) => timeRank(a.time) - timeRank(b.time));
+        const points = routeItems(items);
+        const routeText = points.length 
+          ? points.map((p, i) => `${i + 1}. ${p.place}`).join(" → ")
+          : "無指定路線點";
+
+        let timelineHtml = "";
+        if (items.length) {
+          timelineHtml = items.map(entry => `
+            <div class="print-item">
+              <div class="print-time">${escapeHtml(entry.time || "未定")}</div>
+              <div>
+                <div class="print-item-title">${escapeHtml(entry.title)}</div>
+                ${entry.detail ? `<div class="print-item-detail">${escapeHtml(entry.detail)}</div>` : ""}
+                <div class="print-badges">
+                  <span class="print-badge">${escapeHtml(entry.category)}</span>
+                  <span class="print-badge">${escapeHtml(entry.status)}</span>
+                  ${entry.place ? `<span class="print-badge">${escapeHtml(entry.place)}</span>` : ""}
+                </div>
+              </div>
+            </div>
+          `).join("");
+        } else {
+          timelineHtml = `<div class="empty">此日尚無行程項目</div>`;
+        }
+
+        dayDiv.innerHTML = `
+          <h2>${escapeHtml(day.date)} (${escapeHtml(day.label)}) - ${escapeHtml(day.city)}</h2>
+          <div class="print-route">
+            <strong>路線順序：</strong>${escapeHtml(routeText)}
+          </div>
+          <div class="print-timeline">
+            ${timelineHtml}
+          </div>
+        `;
+        container.appendChild(dayDiv);
+      });
+
+      if (!document.body.contains(container)) {
+        document.body.appendChild(container);
+      }
+
+      window.print();
+    }
+
 
     function importJson(event) {
       const file = event.target.files[0];
