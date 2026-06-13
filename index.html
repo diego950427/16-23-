@@ -167,6 +167,120 @@
       padding: 4px 9px;
       font-size: 13px;
     }
+    .route-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .map-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px 10px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #fff;
+      font-size: 14px;
+    }
+    .map-link.primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .route-map {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .route-stop {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfa;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 10px;
+      min-height: 82px;
+      position: relative;
+    }
+    .route-stop::after {
+      content: "→";
+      position: absolute;
+      right: -14px;
+      top: 30px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .route-stop:last-child::after { content: ""; }
+    .stop-index {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .route-stop b {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .route-stop span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .leg-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .leg-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      background: #fff;
+    }
+    .leg-card h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+    .leg-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+    .leg-tools {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 180px;
+    }
+    .mini-link {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #fbfcfa;
+      font-size: 12px;
+      white-space: nowrap;
+    }
     .timeline {
       position: relative;
       display: grid;
@@ -301,6 +415,9 @@
       .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .item { grid-template-columns: 1fr; }
       .item .actions { justify-content: flex-start; }
+      .leg-card { grid-template-columns: 1fr; }
+      .leg-tools { justify-content: flex-start; min-width: 0; }
+      .route-stop::after { content: ""; }
     }
   </style>
 </head>
@@ -684,13 +801,38 @@
         return;
       }
       const chips = points.map((point, index) => {
-        const q = encodeURIComponent(point.place);
-        return `<a class="route-chip" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noreferrer">${index + 1}. ${escapeHtml(point.place)}</a>`;
+        return `<a class="route-chip" href="${mapsSearchUrl(point.place)}" target="_blank" rel="noreferrer">${index + 1}. ${escapeHtml(point.place)}</a>`;
       }).join("<span>→</span>");
-      const dir = encodeURIComponent(points.map(point => point.place).join(" to "));
+      const stops = points.map((point, index) => `
+        <a class="route-stop" href="${mapsSearchUrl(point.place)}" target="_blank" rel="noreferrer">
+          <span class="stop-index">${index + 1}</span>
+          <b>${escapeHtml(point.place)}</b>
+          <span>${escapeHtml(point.time || "時間未定")} · ${escapeHtml(point.title)}</span>
+        </a>
+      `).join("");
+      const legs = routeLegs(points).map((leg, index) => `
+        <div class="leg-card">
+          <div>
+            <h4>${index + 1}. ${escapeHtml(leg.from.place)} → ${escapeHtml(leg.to.place)}</h4>
+            <p>${escapeHtml(leg.from.time || "出發時間未定")} 出發 · ${escapeHtml(leg.to.time || "抵達時間未定")} 抵達 · ${escapeHtml(leg.window)}</p>
+            <p>${escapeHtml(leg.from.title)} → ${escapeHtml(leg.to.title)}</p>
+          </div>
+          <div class="leg-tools">
+            <a class="mini-link" href="${mapsDirectionsUrl(leg.from.place, leg.to.place, "transit")}" target="_blank" rel="noreferrer">大眾運輸</a>
+            <a class="mini-link" href="${mapsDirectionsUrl(leg.from.place, leg.to.place, "walking")}" target="_blank" rel="noreferrer">步行</a>
+            <a class="mini-link" href="${mapsDirectionsUrl(leg.from.place, leg.to.place, "driving")}" target="_blank" rel="noreferrer">開車</a>
+          </div>
+        </div>
+      `).join("");
       els.routeBox.innerHTML = `
+        <div class="route-actions">
+          <a class="map-link primary" href="${fullDayDirectionsUrl(points, "transit")}" target="_blank" rel="noreferrer">Google Maps 全日路線</a>
+          <a class="map-link" href="${fullDayDirectionsUrl(points, "walking")}" target="_blank" rel="noreferrer">步行版</a>
+          <a class="map-link" href="${fullDayDirectionsUrl(points, "driving")}" target="_blank" rel="noreferrer">開車版</a>
+        </div>
         <div class="route-line">${chips}</div>
-        <p class="muted" style="margin:10px 0 0">路線順序依時間軸排列。可逐點開 Google Maps 查詢，或新增交通項目補車班時間。</p>
+        <div class="route-map">${stops}</div>
+        <div class="leg-list">${legs || `<div class="empty">至少需要兩個路線點，才能產生分段交通。</div>`}</div>
       `;
     }
 
@@ -745,6 +887,51 @@
         seen.add(place);
         return true;
       });
+    }
+
+    function routeLegs(points) {
+      return points.slice(0, -1).map((from, index) => {
+        const to = points[index + 1];
+        return {
+          from,
+          to,
+          window: routeWindow(from.time, to.time)
+        };
+      });
+    }
+
+    function routeWindow(fromTime, toTime) {
+      const from = parseClockMinutes(fromTime);
+      const to = parseClockMinutes(toTime);
+      if (from === null || to === null || to <= from) return "實際交通時間請用 Google Maps 查詢";
+      const diff = to - from;
+      const hours = Math.floor(diff / 60);
+      const minutes = diff % 60;
+      const label = `${hours ? `${hours} 小時 ` : ""}${minutes} 分鐘`;
+      return `兩項行程間隔約 ${label}，請以 Google Maps 即時路線為準`;
+    }
+
+    function parseClockMinutes(value) {
+      const match = String(value || "").match(/(\d{1,2})[:：](\d{2})/);
+      if (!match) return null;
+      return Number(match[1]) * 60 + Number(match[2]);
+    }
+
+    function mapsSearchUrl(place) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+    }
+
+    function mapsDirectionsUrl(origin, destination, mode = "transit") {
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=${mode}`;
+    }
+
+    function fullDayDirectionsUrl(points, mode = "transit") {
+      if (points.length === 1) return mapsSearchUrl(points[0].place);
+      const origin = points[0].place;
+      const destination = points[points.length - 1].place;
+      const waypointText = points.slice(1, -1).map(point => point.place).join("|");
+      const waypoints = waypointText ? `&waypoints=${encodeURIComponent(waypointText)}` : "";
+      return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}${waypoints}&travelmode=${mode}`;
     }
 
     function timeRank(value) {
